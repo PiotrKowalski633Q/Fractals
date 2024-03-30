@@ -1,0 +1,76 @@
+#define distanceToColorPrecision 25 //in positions after coma
+
+void getPixelColor(double pixelValue, global int* colors, int colorCount, int outputRBGValuesArray[])
+{
+    for (int i=distanceToColorPrecision; i>0; i--)
+    {
+        double decimalMultiplier = 1;
+        for (int j=0; j<i; j++)
+        {
+            decimalMultiplier /= 10.0;
+        }
+        for (int j=1; j<=colorCount; j++)
+        {
+            if (pixelValue < decimalMultiplier*j*(10/colorCount))
+            {
+                double colorProportion = pixelValue/(decimalMultiplier*j);
+                outputRBGValuesArray[0] = (colors[j*3+0] * colorProportion + colors[(j-1)*3+0] * (1-colorProportion))/2.0f;
+                outputRBGValuesArray[1] = (colors[j*3+1] * colorProportion + colors[(j-1)*3+1] * (1-colorProportion))/2.0f;
+                outputRBGValuesArray[2] = (colors[j*3+2] * colorProportion + colors[(j-1)*3+2] * (1-colorProportion))/2.0f;
+                return;
+            }
+        }
+    }
+    outputRBGValuesArray[0] = 0;
+    outputRBGValuesArray[1] = 0;
+    outputRBGValuesArray[2] = 0;
+}
+
+void kernel julia(global const int* width, global const int* height, global const double* zoom, global const double* offsetX, global const double* offsetY, global const int* maxIterations, global int* colors, global int* colorCount, global int* outputColors3DimArray)
+{
+    int idX = get_global_id(0);
+    int idY = get_global_id(1);
+
+    if (idX>=width[0] || idY>=height[0])
+    {
+        return;
+    }
+
+    int positionX = idX;
+    int positionY = idY;
+
+    double real = ((1.0*positionX / width[0] - 0.5f) * zoom[0] + offsetX[0]) * 4.0f;
+    double imag = ((1.0*positionY / height[0] - 0.5f) * zoom[0] + offsetY[0]) * 4.0f;
+
+    const double const_real = 0.285;
+    const double const_imag = 0.01;
+
+    int iterations = 0;
+    while (iterations < maxIterations[0])
+    {
+        double tmp_real = real;
+        real = (real * real - imag * imag) + const_real;
+        imag = (tmp_real * imag + tmp_real * imag) + const_imag;
+
+        double dist = real * real + imag * imag;
+
+        if (dist > 4.0f)
+        {
+            break;
+        }
+
+        iterations++;
+    }
+
+    //this is the value of single pixel post-julia
+    double pixelValue = 1.0f*iterations/maxIterations[0];
+
+
+    //coloring:
+    int outputRBGValuesArray[3];
+    getPixelColor(pixelValue, colors, colorCount[0], outputRBGValuesArray);
+
+    outputColors3DimArray[(positionX*height[0]+positionY)*3+0] = outputRBGValuesArray[0];
+    outputColors3DimArray[(positionX*height[0]+positionY)*3+1] = outputRBGValuesArray[1];
+    outputColors3DimArray[(positionX*height[0]+positionY)*3+2] = outputRBGValuesArray[2];
+}
