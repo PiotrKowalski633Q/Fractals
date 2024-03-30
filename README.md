@@ -43,6 +43,6 @@ The music used in the project is:
 
 ## Gallery
 
-![Fractal1](Gallery/0.png)
-![Fractal2](Gallery/3.png)
-![Fractal3](Gallery/9.png)
+![Fractal1](Gallery/0.PNG)
+![Fractal2](Gallery/3.PNG)
+![Fractal3](Gallery/9.PNG)
